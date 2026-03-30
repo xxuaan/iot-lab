@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>IoT Quiz Flashcards – Lecture Prep</title>
+<title>IoT Interactive Quiz – Lecture Prep</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'Segoe UI', Arial, sans-serif; background: #0f1923; color: #e8eaf6; min-height: 100vh; }
@@ -12,96 +12,151 @@
   header h1 { font-size: 1.4rem; color: #fff; font-weight: 700; }
   .exam-badge { background: #e53935; color: #fff; padding: 6px 14px; border-radius: 20px; font-size: 0.82rem; font-weight: 600; }
 
+  .stats-bar { display: flex; gap: 20px; padding: 10px 24px; background: #141e2d; border-bottom: 1px solid #1f2d3d; flex-wrap: wrap; align-items: center; }
+  .stat { font-size: 0.82rem; }
+  .stat span { font-weight: 700; }
+  .stat-correct span { color: #66bb6a; }
+  .stat-wrong span { color: #ef5350; }
+  .stat-remaining span { color: #90caf9; }
+  .streak-badge { font-size: 0.82rem; background: #3a2200; color: #ffcc80; padding: 3px 10px; border-radius: 10px; font-weight: 700; display: none; }
+
   .controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 14px 24px; background: #141e2d; border-bottom: 1px solid #1f2d3d; }
   select { background: #1e2d40; color: #e8eaf6; border: 1px solid #2d4263; padding: 7px 12px; border-radius: 6px; font-size: 0.88rem; cursor: pointer; }
-  .btn { padding: 8px 16px; border: none; border-radius: 6px; font-size: 0.88rem; cursor: pointer; font-weight: 600; transition: all 0.15s; }
+  .btn { padding: 8px 16px; border: none; border-radius: 6px; font-size: 0.88rem; cursor: pointer; font-weight: 600; transition: all 0.15s; font-family: inherit; }
   .btn-primary { background: #1565c0; color: #fff; }
   .btn-primary:hover { background: #1976d2; }
   .btn-secondary { background: #263238; color: #cfd8dc; }
   .btn-secondary:hover { background: #37474f; }
-  .btn-danger { background: #b71c1c; color: #fff; }
-  .btn-danger:hover { background: #c62828; }
+  .btn-danger { background: #4a1010; color: #ef9a9a; }
+  .btn-danger:hover { background: #6a1515; }
   .progress-text { color: #90caf9; font-size: 0.88rem; margin-left: auto; }
 
-  .main { display: flex; flex-direction: column; align-items: center; padding: 30px 20px; min-height: calc(100vh - 160px); }
+  .main { display: flex; flex-direction: column; align-items: center; padding: 30px 20px; min-height: calc(100vh - 210px); }
 
-  /* Card */
-  .card-wrap { perspective: 1200px; width: 100%; max-width: 760px; height: 360px; cursor: pointer; margin-bottom: 24px; }
-  .card-inner { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; transition: transform 0.5s cubic-bezier(0.4,0,0.2,1); }
-  .card-wrap.flipped .card-inner { transform: rotateY(180deg); }
-  .card-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 16px; padding: 28px; display: flex; flex-direction: column; justify-content: center; }
-  .card-front { background: linear-gradient(135deg, #1a2744, #1e3a5f); border: 1px solid #2d4a7a; box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
-  .card-back { background: linear-gradient(135deg, #1a3a2a, #1e4a35); border: 1px solid #2d6e47; box-shadow: 0 8px 32px rgba(0,0,0,0.4); transform: rotateY(180deg); }
+  .progress-bar-wrap { width: 100%; max-width: 760px; height: 6px; background: #1e2d40; border-radius: 3px; margin-bottom: 20px; }
+  .progress-bar-fill { height: 100%; background: linear-gradient(90deg, #1565c0, #42a5f5); border-radius: 3px; transition: width 0.3s; }
 
-  .card-week { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1.5px; color: #64b5f6; margin-bottom: 16px; font-weight: 600; }
+  /* Quiz card */
+  .quiz-card { width: 100%; max-width: 760px; background: linear-gradient(135deg, #1a2744, #1e3a5f); border: 1px solid #2d4a7a; border-radius: 16px; padding: 28px 32px; box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
+
+  .card-week { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1.5px; color: #64b5f6; margin-bottom: 14px; font-weight: 600; }
   .card-type-badge { display: inline-block; font-size: 0.72rem; padding: 2px 10px; border-radius: 10px; margin-left: 8px; vertical-align: middle; }
   .badge-tf { background: #4a1942; color: #ce93d8; }
   .badge-multi { background: #1a3a4a; color: #80cbc4; }
   .badge-num { background: #3a2a00; color: #ffcc80; }
   .badge-single { background: #1a2a1a; color: #a5d6a7; }
 
-  .card-question { font-size: 1.15rem; line-height: 1.6; color: #e3f2fd; font-weight: 500; flex: 1; display: flex; align-items: center; }
+  .card-question { font-size: 1.1rem; line-height: 1.65; color: #e3f2fd; font-weight: 500; margin-bottom: 22px; }
+  .multi-hint { font-size: 0.78rem; color: #80cbc4; margin-bottom: 12px; }
 
-  .card-hint { font-size: 0.78rem; color: #4a6fa5; margin-top: 16px; text-align: center; }
-  .options-grid { display: flex; flex-direction: column; gap: 8px; width: 100%; flex: 1; justify-content: center; }
-  .opt { padding: 9px 14px; border-radius: 8px; font-size: 0.9rem; }
-  .opt-correct { background: rgba(56, 142, 60, 0.3); border: 1px solid #4caf50; color: #a5d6a7; font-weight: 700; }
-  .opt-wrong { background: rgba(198, 40, 40, 0.15); border: 1px solid #e57373; color: #ef9a9a; }
-  .card-answer-label { font-size: 0.78rem; color: #81c784; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; font-weight: 700; }
+  /* Option buttons (single / TF / numerical) */
+  .options-list { display: flex; flex-direction: column; gap: 9px; }
 
-  /* Navigation */
-  .nav-row { display: flex; gap: 14px; align-items: center; }
-  .nav-btn { width: 48px; height: 48px; border-radius: 50%; border: none; cursor: pointer; font-size: 1.3rem; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+  .opt-btn {
+    padding: 11px 18px; border-radius: 10px; font-size: 0.93rem; cursor: pointer;
+    text-align: left; border: 2px solid #2a4270; background: #10203a; color: #b0bec5;
+    transition: border-color 0.12s, background 0.12s, color 0.12s;
+    font-family: inherit; width: 100%;
+  }
+  .opt-btn:hover:not(:disabled) { border-color: #4a80c4; background: #172d4e; color: #e3f2fd; }
+  .opt-btn:disabled { cursor: default; }
+  .opt-btn.correct  { background: rgba(56,142,60,0.22); border-color: #4caf50; color: #a5d6a7; font-weight: 700; }
+  .opt-btn.wrong-selected { background: rgba(198,40,40,0.22); border-color: #ef5350; color: #ef9a9a; font-weight: 700; }
+  .opt-btn.missed   { background: rgba(56,142,60,0.1);  border-color: #388e3c; color: #81c784; }
+
+  /* Multi-select option rows */
+  .opt-check-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 11px 18px; border-radius: 10px; cursor: pointer;
+    border: 2px solid #2a4270; background: #10203a;
+    transition: border-color 0.12s, background 0.12s;
+    user-select: none;
+  }
+  .opt-check-row:hover { border-color: #4a80c4; background: #172d4e; }
+  .opt-check-row.selected { border-color: #5c9ede; background: #172d4e; }
+  .opt-check-row.correct  { background: rgba(56,142,60,0.22); border-color: #4caf50; }
+  .opt-check-row.wrong-selected { background: rgba(198,40,40,0.22); border-color: #ef5350; }
+  .opt-check-row.missed   { background: rgba(56,142,60,0.1);  border-color: #388e3c; }
+  .opt-check-row.disabled { cursor: default; pointer-events: none; }
+
+  .opt-check-box {
+    width: 18px; height: 18px; border-radius: 4px; border: 2px solid #4a6fa5;
+    background: #0d1b2e; display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; transition: background 0.12s, border-color 0.12s;
+  }
+  .opt-check-row.selected .opt-check-box { background: #1565c0; border-color: #42a5f5; }
+  .opt-check-row.correct .opt-check-box  { background: #2e7d32; border-color: #4caf50; }
+  .opt-check-row.wrong-selected .opt-check-box { background: #b71c1c; border-color: #ef5350; }
+  .opt-check-box svg { display: none; }
+  .opt-check-row.selected .opt-check-box svg,
+  .opt-check-row.correct .opt-check-box svg,
+  .opt-check-row.wrong-selected .opt-check-box svg { display: block; }
+
+  .opt-check-text { font-size: 0.93rem; color: #b0bec5; }
+  .opt-check-row.selected .opt-check-text { color: #e3f2fd; }
+  .opt-check-row.correct .opt-check-text  { color: #a5d6a7; font-weight: 700; }
+  .opt-check-row.wrong-selected .opt-check-text { color: #ef9a9a; font-weight: 700; }
+  .opt-check-row.missed .opt-check-text   { color: #81c784; font-weight: 700; }
+
+  /* Submit / result row */
+  .action-row { margin-top: 18px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .btn-submit {
+    padding: 10px 28px; background: #1565c0; color: #fff; border: none; border-radius: 8px;
+    font-size: 0.93rem; font-weight: 700; cursor: pointer; transition: background 0.15s; font-family: inherit;
+  }
+  .btn-submit:hover:not(:disabled) { background: #1976d2; }
+  .btn-submit:disabled { background: #263238; color: #546e7a; cursor: default; }
+
+  .result-feedback { display: flex; align-items: center; gap: 14px; width: 100%; padding-top: 18px; border-top: 1px solid #2d4a7a; margin-top: 18px; }
+  .result-icon { font-size: 1.5rem; flex-shrink: 0; }
+  .result-text { flex: 1; }
+  .result-label { font-weight: 700; font-size: 0.98rem; margin-bottom: 3px; }
+  .result-label.correct { color: #66bb6a; }
+  .result-label.wrong   { color: #ef5350; }
+  .result-detail { font-size: 0.8rem; color: #90a4ae; }
+  .btn-next {
+    padding: 10px 26px; background: #1565c0; color: #fff; border: none; border-radius: 8px;
+    font-size: 0.93rem; font-weight: 700; cursor: pointer; transition: background 0.15s;
+    font-family: inherit; white-space: nowrap; flex-shrink: 0;
+  }
+  .btn-next:hover { background: #1976d2; }
+
+  /* Nav */
+  .nav-row { display: flex; gap: 14px; align-items: center; margin-top: 22px; }
+  .nav-btn { width: 44px; height: 44px; border-radius: 50%; border: none; cursor: pointer; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; transition: background 0.15s; }
   .nav-prev { background: #1e2d40; color: #90caf9; }
   .nav-prev:hover { background: #263d54; }
-  .nav-next { background: #1565c0; color: #fff; }
-  .nav-next:hover { background: #1976d2; }
+  .nav-next-btn { background: #1e2d40; color: #90caf9; }
+  .nav-next-btn:hover { background: #263d54; }
   .nav-num { color: #90caf9; font-size: 0.92rem; min-width: 100px; text-align: center; }
 
-  /* Stats bar */
-  .stats-bar { display: flex; gap: 20px; padding: 10px 24px; background: #141e2d; flex-wrap: wrap; }
-  .stat { font-size: 0.82rem; }
-  .stat span { font-weight: 700; }
-  .stat-correct span { color: #66bb6a; }
-  .stat-wrong span { color: #ef5350; }
-  .stat-remaining span { color: #90caf9; }
-
-  /* Self-assessment */
-  .assessment { display: flex; gap: 10px; margin-top: 8px; }
-  .assess-btn { padding: 8px 18px; border: none; border-radius: 20px; font-size: 0.82rem; cursor: pointer; font-weight: 600; transition: all 0.15s; }
-  .assess-know { background: #2e7d32; color: #fff; }
-  .assess-know:hover { background: #388e3c; }
-  .assess-review { background: #e65100; color: #fff; }
-  .assess-review:hover { background: #f57c00; }
-
-  .shuffle-indicator { color: #ffcc80; font-size: 0.8rem; padding: 2px 8px; background: #3a2a00; border-radius: 10px; }
-
-  /* Progress bar */
-  .progress-bar-wrap { width: 100%; max-width: 760px; height: 4px; background: #1e2d40; border-radius: 2px; margin-bottom: 16px; }
-  .progress-bar-fill { height: 100%; background: linear-gradient(90deg, #1565c0, #42a5f5); border-radius: 2px; transition: width 0.3s; }
-
-  .completed-msg { text-align: center; padding: 40px; color: #90caf9; font-size: 1.1rem; }
-  .completed-msg h2 { font-size: 2rem; color: #66bb6a; margin-bottom: 16px; }
+  /* End screen */
+  .end-screen { width: 100%; max-width: 760px; text-align: center; padding: 48px 20px; }
+  .end-screen h2 { font-size: 2rem; margin-bottom: 10px; }
+  .final-score { font-size: 3.2rem; font-weight: 700; margin: 20px 0 8px; }
+  .final-score.great { color: #66bb6a; }
+  .final-score.ok    { color: #ffcc80; }
+  .final-score.low   { color: #ef5350; }
+  .end-detail { color: #90caf9; font-size: 0.92rem; margin-bottom: 28px; }
+  .end-screen .btn { margin: 5px; }
 </style>
 </head>
 <body>
 
 <header>
-  <h1>📡 IoT Quiz Flashcards</h1>
+  <h1>📡 IoT Interactive Quiz</h1>
   <span class="exam-badge">🗓 Exam: 2 Apr · 9:15 AM · 50 Qs</span>
 </header>
 
 <div class="stats-bar">
-  <div class="stat stat-correct">✅ Known: <span id="knownCount">0</span></div>
-  <div class="stat stat-wrong">🔁 Review: <span id="reviewCount">0</span></div>
-  <div class="stat stat-remaining">📋 Remaining: <span id="remainCount">0</span></div>
-  <div class="stat">Total: <span id="totalCount">0</span></div>
+  <div class="stat stat-correct">✅ Correct: <span id="scoreCorrect">0</span></div>
+  <div class="stat stat-wrong">❌ Wrong: <span id="scoreWrong">0</span></div>
+  <div class="stat stat-remaining">📋 Remaining: <span id="scoreRemaining">0</span></div>
+  <div class="streak-badge" id="streakBadge">🔥 Streak: <span id="streakCount">0</span></div>
 </div>
 
 <div class="controls">
-  <select id="weekFilter">
-    <option value="all">All Topics</option>
-  </select>
+  <select id="weekFilter"><option value="all">All Topics</option></select>
   <select id="typeFilter">
     <option value="all">All Types</option>
     <option value="single">Single Choice</option>
@@ -109,39 +164,36 @@
     <option value="tf">True/False</option>
     <option value="numerical">Numerical</option>
   </select>
-  <select id="statusFilter">
-    <option value="all">All Cards</option>
-    <option value="review">Review Only</option>
-    <option value="new">Unseen Only</option>
-  </select>
-  <button class="btn btn-secondary" onclick="shuffle()">🔀 Shuffle</button>
-  <button class="btn btn-secondary" onclick="resetProgress()">🔄 Reset</button>
+  <button class="btn btn-secondary" onclick="toggleShuffle()">🔀 Shuffle</button>
+  <button class="btn btn-danger" onclick="resetQuiz()">🔄 Reset</button>
   <span class="progress-text" id="progressText"></span>
 </div>
 
-<div class="main">
+<div class="main" id="mainArea">
   <div class="progress-bar-wrap">
     <div class="progress-bar-fill" id="progressBar" style="width:0%"></div>
   </div>
 
-  <div class="card-wrap" id="cardWrap" onclick="flipCard()">
-    <div class="card-inner" id="cardInner">
-      <div class="card-face card-front" id="cardFront"></div>
-      <div class="card-face card-back" id="cardBack"></div>
+  <div class="quiz-card" id="quizCard">
+    <div class="card-week" id="cardWeek"></div>
+    <div class="card-question" id="cardQuestion"></div>
+    <div class="multi-hint" id="multiHint" style="display:none">Select all that apply, then click Submit.</div>
+    <div class="options-list" id="optionsList"></div>
+    <div id="submitArea"></div>
+    <div class="result-feedback" id="resultFeedback" style="display:none">
+      <div class="result-icon" id="resultIcon"></div>
+      <div class="result-text">
+        <div class="result-label" id="resultLabel"></div>
+        <div class="result-detail" id="resultDetail"></div>
+      </div>
+      <button class="btn-next" id="nextBtn" onclick="advance()">Next →</button>
     </div>
   </div>
 
-  <div class="assessment" id="assessmentBtns" style="display:none">
-    <button class="assess-btn assess-know" onclick="markKnown()">✅ I know this</button>
-    <button class="assess-btn assess-review" onclick="markReview()">🔁 Need review</button>
-  </div>
-
-  <div style="height: 16px"></div>
-
   <div class="nav-row">
-    <button class="nav-btn nav-prev" onclick="prev()">‹</button>
+    <button class="nav-btn nav-prev" onclick="goTo(currentIndex - 1)" title="Previous (←)">‹</button>
     <span class="nav-num" id="navNum">1 / 0</span>
-    <button class="nav-btn nav-next" onclick="next()">›</button>
+    <button class="nav-btn nav-next-btn" onclick="goTo(currentIndex + 1)" title="Next (→)">›</button>
   </div>
 </div>
 
@@ -178,7 +230,7 @@ const ALL_QUESTIONS = [
   {"week":"Week 3: CoAP & MQTT","q":"CoAP supports which HTTP-like methods? (Select all that apply)","options":["GET","POST","PUT","DELETE","OPTIONS","HEAD","CONNECT","TRACE","PATCH"],"answer":["GET","POST","PUT","DELETE"],"type":"multi"},
   {"week":"Week 3: CoAP & MQTT","q":"CoAP is a specialised _________ protocol.","options":["Web transfer","Power","Resource","Application"],"answer":["Application"],"type":"single"},
   {"week":"Week 3: CoAP & MQTT","q":"CoAP messages can be of which types?","options":["Request and Response","Synchronous and Asynchronous","Persistent and Transient","Confirmable and Non-Confirmable"],"answer":["Confirmable and Non-Confirmable"],"type":"single"},
-  {"week":"Week 3: CoAP & MQTT","q":"CoAP provides which requirements?","options":["Simplicity and low overhead","Multicast support","Lower overhead and simplicity","Multicast support and simplicity","Lower overhead and multicast support"],"answer":["Multicast support and simplicity, lower overhead"],"type":"single"},
+  {"week":"Week 3: CoAP & MQTT","q":"CoAP provides which requirements?","options":["Simplicity and low overhead","Multicast support","Lower overhead and simplicity","Multicast support and simplicity","Lower overhead and multicast support"],"answer":["Multicast support and simplicity"],"type":"single"},
   {"week":"Week 3: CoAP & MQTT","q":"The core of the CoAP protocol is specified in?","options":["RFC 7252","RFC 7452","RFC 7524","RFC 7254"],"answer":["RFC 7252"],"type":"single"},
   {"week":"Week 3: CoAP & MQTT","q":"What type of protocol is MQTT?","options":["Transport protocol","Network protocol","Presentation protocol","Application protocol"],"answer":["Application protocol"],"type":"single"},
   {"week":"Week 3: CoAP & MQTT","q":"MQTT is _______ oriented.","options":["Data","Message","Device","Network"],"answer":["Message"],"type":"single"},
@@ -304,29 +356,34 @@ const ALL_QUESTIONS = [
   {"week":"Week 11: ZigBee & Z-Wave","q":"Which is NOT a feature of ZigBee? (best answer)","options":["Real-time Communication","Large Bandwidth","High Security","Low Power Consumption"],"answer":["Large Bandwidth"],"type":"single"}
 ];
 
-// State
-let questions = [...ALL_QUESTIONS];
+const TYPE_LABELS = { tf: 'True/False', multi: 'Multi-select', numerical: 'Numerical', single: 'Single choice' };
+const TYPE_CLASS  = { tf: 'badge-tf',   multi: 'badge-multi',  numerical: 'badge-num',  single: 'badge-single' };
+
+// Quiz state
+let questions = [];
 let currentIndex = 0;
-let isFlipped = false;
-let known = new Set();
-let needsReview = new Set();
+let answered = {};        // localIndex -> { selected: [], correct: bool }
+let scoreCorrect = 0;
+let scoreWrong = 0;
+let streak = 0;
+let bestStreak = 0;
 let shuffled = false;
 let filterWeek = 'all';
 let filterType = 'all';
-let filterStatus = 'all';
+
+// ── Filtering / init ──────────────────────────────────────────────────────────
 
 function getFiltered() {
-  return ALL_QUESTIONS.filter((q, i) => {
-    if (filterWeek !== 'all' && q.week !== filterWeek) return false;
-    if (filterType !== 'all' && q.type !== filterType) return false;
-    if (filterStatus === 'review' && !needsReview.has(i)) return false;
-    if (filterStatus === 'new' && (known.has(i) || needsReview.has(i))) return false;
-    return true;
-  }).map((q, _, arr) => ({...q, origIdx: ALL_QUESTIONS.indexOf(q)}));
+  return ALL_QUESTIONS
+    .map((q, i) => ({ ...q, origIdx: i }))
+    .filter(q => {
+      if (filterWeek !== 'all' && q.week !== filterWeek) return false;
+      if (filterType !== 'all' && q.type !== filterType) return false;
+      return true;
+    });
 }
 
 function init() {
-  // Populate week filter
   const weeks = [...new Set(ALL_QUESTIONS.map(q => q.week))];
   const sel = document.getElementById('weekFilter');
   weeks.forEach(w => {
@@ -334,115 +391,323 @@ function init() {
     opt.value = w; opt.textContent = w;
     sel.appendChild(opt);
   });
-  document.getElementById('weekFilter').onchange = applyFilter;
+  sel.onchange = applyFilter;
   document.getElementById('typeFilter').onchange = applyFilter;
-  document.getElementById('statusFilter').onchange = applyFilter;
-  document.getElementById('totalCount').textContent = ALL_QUESTIONS.length;
   applyFilter();
 }
 
 function applyFilter() {
   filterWeek = document.getElementById('weekFilter').value;
   filterType = document.getElementById('typeFilter').value;
-  filterStatus = document.getElementById('statusFilter').value;
   questions = getFiltered();
   if (shuffled) questions = questions.sort(() => Math.random() - 0.5);
-  currentIndex = 0;
-  isFlipped = false;
-  renderCard();
+  resetState();
+  renderQuestion();
 }
 
-function shuffle() {
-  shuffled = !shuffled;
-  if (shuffled) questions = questions.sort(() => Math.random() - 0.5);
-  else applyFilter();
+function resetState() {
   currentIndex = 0;
-  isFlipped = false;
-  renderCard();
-}
-
-function resetProgress() {
-  known.clear();
-  needsReview.clear();
+  answered = {};
+  scoreCorrect = 0;
+  scoreWrong = 0;
+  streak = 0;
+  bestStreak = 0;
   updateStats();
+}
+
+function toggleShuffle() {
+  shuffled = !shuffled;
   applyFilter();
 }
 
-function flipCard() {
-  isFlipped = !isFlipped;
-  document.getElementById('cardWrap').classList.toggle('flipped', isFlipped);
-  document.getElementById('assessmentBtns').style.display = isFlipped ? 'flex' : 'none';
+function resetQuiz() {
+  shuffled = false;
+  document.getElementById('weekFilter').value = 'all';
+  document.getElementById('typeFilter').value = 'all';
+  applyFilter();
 }
 
-function prev() {
-  if (currentIndex > 0) { currentIndex--; isFlipped = false; document.getElementById('cardWrap').classList.remove('flipped'); document.getElementById('assessmentBtns').style.display = 'none'; renderCard(); }
-}
+// ── Rendering ─────────────────────────────────────────────────────────────────
 
-function next() {
-  if (currentIndex < questions.length - 1) { currentIndex++; isFlipped = false; document.getElementById('cardWrap').classList.remove('flipped'); document.getElementById('assessmentBtns').style.display = 'none'; renderCard(); }
-}
-
-function markKnown() {
-  if (questions[currentIndex]) { known.add(questions[currentIndex].origIdx); needsReview.delete(questions[currentIndex].origIdx); updateStats(); next(); }
-}
-
-function markReview() {
-  if (questions[currentIndex]) { needsReview.add(questions[currentIndex].origIdx); known.delete(questions[currentIndex].origIdx); updateStats(); next(); }
-}
-
-function updateStats() {
-  document.getElementById('knownCount').textContent = known.size;
-  document.getElementById('reviewCount').textContent = needsReview.size;
-  document.getElementById('remainCount').textContent = ALL_QUESTIONS.length - known.size - needsReview.size;
-}
-
-const TYPE_LABELS = { tf: 'True/False', multi: 'Multi-select', numerical: 'Numerical', single: 'Single choice' };
-const TYPE_CLASS = { tf: 'badge-tf', multi: 'badge-multi', numerical: 'badge-num', single: 'badge-single' };
-
-function renderCard() {
+function renderQuestion() {
   if (questions.length === 0) {
-    document.getElementById('cardFront').innerHTML = '<div class="card-question" style="text-align:center;width:100%;">No questions match your filters.</div>';
-    document.getElementById('cardBack').innerHTML = '';
+    document.getElementById('quizCard').innerHTML =
+      '<div style="text-align:center;padding:48px;color:#90caf9;font-size:1rem;">No questions match your filters.</div>';
     document.getElementById('navNum').textContent = '0 / 0';
     document.getElementById('progressBar').style.width = '0%';
     document.getElementById('progressText').textContent = '0 questions';
     return;
   }
+
   const q = questions[currentIndex];
-  const progress = Math.round(((currentIndex + 1) / questions.length) * 100);
-  document.getElementById('progressBar').style.width = progress + '%';
+  const isAnswered = answered[currentIndex] !== undefined;
+  const isMulti = q.type === 'multi';
+
+  // Progress
+  const pct = Math.round(((currentIndex + 1) / questions.length) * 100);
+  document.getElementById('progressBar').style.width = pct + '%';
   document.getElementById('navNum').textContent = `${currentIndex + 1} / ${questions.length}`;
   document.getElementById('progressText').textContent = `${questions.length} questions`;
 
-  // Front
-  document.getElementById('cardFront').innerHTML = `
-    <div class="card-week">${q.week} <span class="card-type-badge ${TYPE_CLASS[q.type]}">${TYPE_LABELS[q.type]}</span></div>
-    <div class="card-question">${q.q}</div>
-    <div class="card-hint">👆 Click to reveal answer</div>
-  `;
+  // Header
+  document.getElementById('cardWeek').innerHTML =
+    `${q.week} <span class="card-type-badge ${TYPE_CLASS[q.type]}">${TYPE_LABELS[q.type]}</span>`;
+  document.getElementById('cardQuestion').textContent = q.q;
+  document.getElementById('multiHint').style.display = (isMulti && !isAnswered) ? '' : 'none';
 
-  // Back — show all options with correct ones highlighted
-  const optsHtml = q.options.map(opt => {
-    const isCorrect = q.answer.includes(opt);
-    return `<div class="opt ${isCorrect ? 'opt-correct' : 'opt-wrong'}">${isCorrect ? '✓ ' : '✗ '}${opt}</div>`;
-  }).join('');
+  // Options
+  const list = document.getElementById('optionsList');
+  list.innerHTML = '';
 
-  document.getElementById('cardBack').innerHTML = `
-    <div class="card-answer-label">✅ Answer</div>
-    <div class="options-grid">${optsHtml}</div>
-  `;
+  if (isMulti) {
+    q.options.forEach(opt => {
+      const row = document.createElement('div');
+      row.className = 'opt-check-row';
+      row.dataset.value = opt;
+
+      if (isAnswered) {
+        row.classList.add('disabled');
+        const wasSelected = answered[currentIndex].selected.includes(opt);
+        const isCorrect = q.answer.includes(opt);
+        if (wasSelected && isCorrect)   row.classList.add('correct');
+        else if (wasSelected)           row.classList.add('wrong-selected');
+        else if (isCorrect)             row.classList.add('missed');
+      }
+
+      const box = document.createElement('div');
+      box.className = 'opt-check-box';
+      box.innerHTML = `<svg width="12" height="12" viewBox="0 0 12 12">
+        <polyline points="1.5,6 4.5,9 10.5,3" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+      </svg>`;
+
+      if (isAnswered && answered[currentIndex].selected.includes(opt)) {
+        row.classList.add('selected');
+      }
+
+      const text = document.createElement('span');
+      text.className = 'opt-check-text';
+      if (isAnswered) {
+        const wasSelected = answered[currentIndex].selected.includes(opt);
+        const isCorrect = q.answer.includes(opt);
+        if (wasSelected && isCorrect)   text.textContent = `✓ ${opt}`;
+        else if (wasSelected)           text.textContent = `✗ ${opt}`;
+        else if (isCorrect)             text.textContent = `○ ${opt}  ← correct`;
+        else                            text.textContent = opt;
+      } else {
+        text.textContent = opt;
+        row.addEventListener('click', () => {
+          row.classList.toggle('selected');
+          row.querySelector('.opt-check-box').classList.toggle('selected', row.classList.contains('selected'));
+        });
+      }
+
+      row.appendChild(box);
+      row.appendChild(text);
+      list.appendChild(row);
+    });
+  } else {
+    // Single / TF / numerical
+    q.options.forEach(opt => {
+      const btn = document.createElement('button');
+      btn.className = 'opt-btn';
+      btn.textContent = opt;
+
+      if (isAnswered) {
+        btn.disabled = true;
+        const wasSelected = answered[currentIndex].selected.includes(opt);
+        const isCorrect = q.answer.includes(opt);
+        if (wasSelected && isCorrect)   { btn.classList.add('correct');        btn.textContent = `✓  ${opt}`; }
+        else if (wasSelected)           { btn.classList.add('wrong-selected'); btn.textContent = `✗  ${opt}`; }
+        else if (isCorrect)             { btn.classList.add('missed');         btn.textContent = `✓  ${opt}  ← correct`; }
+      } else {
+        btn.addEventListener('click', () => answerSingle(opt));
+      }
+
+      list.appendChild(btn);
+    });
+  }
+
+  // Submit button (multi only, before answering)
+  const submitArea = document.getElementById('submitArea');
+  if (isMulti && !isAnswered) {
+    submitArea.innerHTML = `<div class="action-row">
+      <button class="btn-submit" id="submitBtn" onclick="submitMulti()">Submit answer</button>
+    </div>`;
+  } else {
+    submitArea.innerHTML = '';
+  }
+
+  // Result feedback
+  const fb = document.getElementById('resultFeedback');
+  if (isAnswered) {
+    const wasCorrect = answered[currentIndex].correct;
+    document.getElementById('resultIcon').textContent  = wasCorrect ? '✅' : '❌';
+    document.getElementById('resultLabel').textContent = wasCorrect ? 'Correct!' : 'Incorrect';
+    document.getElementById('resultLabel').className   = 'result-label ' + (wasCorrect ? 'correct' : 'wrong');
+    document.getElementById('resultDetail').textContent =
+      wasCorrect ? '' : `Correct: ${q.answer.join(', ')}`;
+    const isLast = currentIndex === questions.length - 1;
+    document.getElementById('nextBtn').textContent = isLast ? 'See results' : 'Next →';
+    fb.style.display = '';
+  } else {
+    fb.style.display = 'none';
+  }
 }
 
+// ── Answering ─────────────────────────────────────────────────────────────────
+
+function answerSingle(selected) {
+  if (answered[currentIndex] !== undefined) return;
+  const q = questions[currentIndex];
+  const correct = q.answer.length === 1 && q.answer[0] === selected;
+  recordAnswer([selected], correct);
+}
+
+function submitMulti() {
+  if (answered[currentIndex] !== undefined) return;
+  const q = questions[currentIndex];
+  const selected = [...document.querySelectorAll('#optionsList .opt-check-row.selected')]
+    .map(r => r.dataset.value);
+  if (selected.length === 0) { return; }
+  const correct =
+    selected.length === q.answer.length &&
+    q.answer.every(a => selected.includes(a));
+  recordAnswer(selected, correct);
+}
+
+function recordAnswer(selected, correct) {
+  answered[currentIndex] = { selected, correct };
+  if (correct) {
+    scoreCorrect++;
+    streak++;
+    if (streak > bestStreak) bestStreak = streak;
+  } else {
+    scoreWrong++;
+    streak = 0;
+  }
+  updateStats();
+  renderQuestion();
+}
+
+// ── Navigation ────────────────────────────────────────────────────────────────
+
+function advance() {
+  if (currentIndex < questions.length - 1) {
+    currentIndex++;
+    renderQuestion();
+  } else {
+    showEndScreen();
+  }
+}
+
+function goTo(idx) {
+  if (idx < 0 || idx >= questions.length) return;
+  currentIndex = idx;
+  renderQuestion();
+}
+
+// ── Stats ─────────────────────────────────────────────────────────────────────
+
+function updateStats() {
+  document.getElementById('scoreCorrect').textContent  = scoreCorrect;
+  document.getElementById('scoreWrong').textContent    = scoreWrong;
+  const remaining = questions.length - Object.keys(answered).length;
+  document.getElementById('scoreRemaining').textContent = remaining;
+  const badge = document.getElementById('streakBadge');
+  if (streak >= 3) {
+    badge.style.display = '';
+    document.getElementById('streakCount').textContent = streak;
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+// ── End screen ────────────────────────────────────────────────────────────────
+
+function showEndScreen() {
+  const total = Object.keys(answered).length;
+  const pct   = total > 0 ? Math.round((scoreCorrect / total) * 100) : 0;
+  const cls   = pct >= 80 ? 'great' : pct >= 60 ? 'ok' : 'low';
+  const emoji = pct >= 80 ? '🎉' : pct >= 60 ? '👍' : '📚';
+  const msg   = pct >= 80 ? 'Great work!' : pct >= 60 ? 'Decent effort!' : 'Keep studying!';
+
+  const wrongIdxs = Object.entries(answered)
+    .filter(([, a]) => !a.correct)
+    .map(([i]) => parseInt(i));
+
+  document.getElementById('mainArea').innerHTML = `
+    <div class="end-screen">
+      <h2>${emoji} ${msg}</h2>
+      <div class="final-score ${cls}">${scoreCorrect} / ${total}</div>
+      <div class="end-detail">${pct}% correct &nbsp;·&nbsp; Best streak: ${bestStreak}</div>
+      <button class="btn btn-primary" onclick="resetQuiz()">🔄 Try all again</button>
+      ${wrongIdxs.length > 0
+        ? `<button class="btn btn-secondary" onclick="retryWrong()">❌ Retry ${wrongIdxs.length} wrong</button>`
+        : ''}
+    </div>
+  `;
+  // stash wrong indices for retryWrong
+  window._wrongIdxs = wrongIdxs;
+}
+
+function retryWrong() {
+  const idxs = window._wrongIdxs || [];
+  questions = idxs.map(i => ({ ...questions[i], origIdx: questions[i].origIdx }));
+  currentIndex = 0;
+  answered = {};
+  scoreCorrect = 0;
+  scoreWrong = 0;
+  streak = 0;
+  bestStreak = 0;
+
+  document.getElementById('mainArea').innerHTML = `
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-fill" id="progressBar" style="width:0%"></div>
+    </div>
+    <div class="quiz-card" id="quizCard">
+      <div class="card-week" id="cardWeek"></div>
+      <div class="card-question" id="cardQuestion"></div>
+      <div class="multi-hint" id="multiHint" style="display:none">Select all that apply, then click Submit.</div>
+      <div class="options-list" id="optionsList"></div>
+      <div id="submitArea"></div>
+      <div class="result-feedback" id="resultFeedback" style="display:none">
+        <div class="result-icon" id="resultIcon"></div>
+        <div class="result-text">
+          <div class="result-label" id="resultLabel"></div>
+          <div class="result-detail" id="resultDetail"></div>
+        </div>
+        <button class="btn-next" id="nextBtn" onclick="advance()">Next →</button>
+      </div>
+    </div>
+    <div class="nav-row">
+      <button class="nav-btn nav-prev" onclick="goTo(currentIndex - 1)">‹</button>
+      <span class="nav-num" id="navNum">1 / 0</span>
+      <button class="nav-btn nav-next-btn" onclick="goTo(currentIndex + 1)">›</button>
+    </div>
+  `;
+
+  updateStats();
+  renderQuestion();
+}
+
+// ── Keyboard shortcuts ────────────────────────────────────────────────────────
+
 document.addEventListener('keydown', e => {
-  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') next();
-  else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') prev();
-  else if (e.key === ' ') { e.preventDefault(); flipCard(); }
-  else if (e.key === 'k' || e.key === 'K') { if (isFlipped) markKnown(); }
-  else if (e.key === 'r' || e.key === 'R') { if (isFlipped) markReview(); }
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+    if (answered[currentIndex] !== undefined) advance();
+    else goTo(currentIndex + 1);
+  } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+    goTo(currentIndex - 1);
+  } else if (e.key === 'Enter') {
+    const q = questions[currentIndex];
+    if (!q) return;
+    if (answered[currentIndex] !== undefined) advance();
+    else if (q.type === 'multi') submitMulti();
+  }
 });
 
 init();
-updateStats();
 </script>
 </body>
 </html>
